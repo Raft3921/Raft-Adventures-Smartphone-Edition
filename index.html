@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="theme-color" content="#1a2a4f">
+  <title>ラフトの冒険</title>
+  <style>
+    * {
+      touch-action: manipulation;
+      -webkit-touch-callout: none;
+      -webkit-user-select: none;
+      -khtml-user-select: none;
+      -moz-user-select: none;
+      -ms-user-select: none;
+      user-select: none;
+      box-sizing: border-box;
+    }
+    
+    html {
+      background: linear-gradient(135deg, #1a2a4f, #0f1a2e);
+      min-height: 100vh;
+      min-height: 100dvh;
+    }
+    
+    body {
+      margin: 0;
+      padding: 0;
+      background: linear-gradient(135deg, #1a2a4f, #0f1a2e);
+      color: #1a2a4f;
+      font-family: "Yu Gothic", "Hiragino Kaku Gothic ProN", sans-serif;
+      overflow: hidden;
+      position: fixed;
+      width: 100vw;
+      height: 100vh;
+      height: 100dvh;
+      -webkit-overflow-scrolling: touch;
+    }
+    
+    canvas {
+      display: block;
+      margin: auto;
+      background: #113;
+      border: 2px solid #1a2a4f;
+      image-rendering: pixelated;
+      image-rendering: -moz-crisp-edges;
+      image-rendering: crisp-edges;
+      max-width: 100vw;
+      max-height: 100vh;
+      max-height: 100dvh;
+      width: auto;
+      height: auto;
+      touch-action: none;
+    }
+    
+    #backHomeBtn {
+      position: absolute;
+      top: env(safe-area-inset-top, 20px);
+      left: env(safe-area-inset-left, 20px);
+      padding: 12px 16px;
+      font-size: 16px;
+      z-index: 1000;
+      background: #3498db;
+      color: white;
+      border-radius: 20px;
+      border: none;
+      font-weight: bold;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      min-width: 80px;
+      min-height: 45px;
+      box-shadow: 0 4px 12px rgba(52, 152, 219, 0.3);
+    }
+    
+    #backHomeBtn:hover {
+      background: #2980b9;
+      transform: translateY(-2px);
+      box-shadow: 0 6px 16px rgba(52, 152, 219, 0.4);
+    }
+    
+    #fullscreenBtn {
+      position: absolute;
+      top: env(safe-area-inset-top, 20px);
+      right: env(safe-area-inset-right, 20px);
+      padding: 12px 16px;
+      font-size: 16px;
+      z-index: 1000;
+      background: #3498db;
+      color: white;
+      border-radius: 20px;
+      border: none;
+      font-weight: bold;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      min-width: 80px;
+      min-height: 45px;
+      box-shadow: 0 4px 12px rgba(52, 152, 219, 0.3);
+    }
+    
+    #fullscreenBtn:hover {
+      background: #2980b9;
+      transform: translateY(-2px);
+      box-shadow: 0 6px 16px rgba(52, 152, 219, 0.4);
+    }
+    
+    /* タッチ操作用のコントロール */
+    #touchControls {
+      position: fixed;
+      bottom: env(safe-area-inset-bottom, 20px);
+      left: env(safe-area-inset-left, 20px);
+      right: env(safe-area-inset-right, 20px);
+      z-index: 1000;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      pointer-events: none;
+      gap: 20px;
+    }
+    
+    .control-group {
+      display: flex;
+      gap: 15px;
+      pointer-events: auto;
+    }
+    
+    .control-button {
+      width: 65px;
+      height: 65px;
+      background: #3498db;
+      border: none;
+      border-radius: 20px;
+      font-size: 24px;
+      font-weight: bold;
+      color: white;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      user-select: none;
+      touch-action: manipulation;
+      transition: all 0.2s ease;
+      box-shadow: 0 4px 12px rgba(52, 152, 219, 0.3);
+    }
+    
+    .control-button:active {
+      background: #2980b9;
+      transform: scale(0.95);
+      box-shadow: 0 2px 8px rgba(52, 152, 219, 0.4);
+    }
+    
+    .control-button.jump {
+      background: #f39c12;
+      box-shadow: 0 4px 12px rgba(243, 156, 18, 0.4);
+    }
+    
+    .control-button.jump:active {
+      background: #e67e22;
+      box-shadow: 0 2px 8px rgba(243, 156, 18, 0.6);
+    }
+    
+    .fullscreen-mode .ui-button {
+      opacity: 0;
+      pointer-events: none;
+    }
+    
+    .fullscreen-mode canvas {
+      width: 100vw !important;
+      height: 100vh !important;
+      height: 100dvh !important;
+      border: none;
+      margin: 0;
+    }
+    
+    .fullscreen-mode #touchControls {
+      bottom: env(safe-area-inset-bottom, 40px);
+    }
+    
+    /* 横画面対応 */
+    @media (orientation: landscape) {
+      #touchControls {
+        bottom: env(safe-area-inset-bottom, 15px);
+        left: env(safe-area-inset-left, 15px);
+        right: env(safe-area-inset-right, 15px);
+      }
+      
+      .control-button {
+        width: 60px;
+        height: 60px;
+        font-size: 22px;
+      }
+      
+      #backHomeBtn, #fullscreenBtn {
+        top: env(safe-area-inset-top, 10px);
+        padding: 10px 14px;
+        font-size: 14px;
+        min-width: 70px;
+        min-height: 40px;
+      }
+    }
+    
+    /* 小さい画面対応 */
+    @media (max-width: 480px) {
+      .control-button {
+        width: 60px;
+        height: 60px;
+        font-size: 22px;
+      }
+      
+      #backHomeBtn, #fullscreenBtn {
+        padding: 10px 14px;
+        font-size: 14px;
+        min-width: 70px;
+        min-height: 40px;
+      }
+      
+      #touchControls {
+        bottom: env(safe-area-inset-bottom, 15px);
+        left: env(safe-area-inset-left, 15px);
+        right: env(safe-area-inset-right, 15px);
+      }
+    }
+    
+    /* 非常に小さい画面対応 */
+    @media (max-width: 360px) {
+      .control-button {
+        width: 55px;
+        height: 55px;
+        font-size: 20px;
+      }
+      
+      .control-group {
+        gap: 10px;
+      }
+      
+      #touchControls {
+        bottom: env(safe-area-inset-bottom, 10px);
+        left: env(safe-area-inset-left, 10px);
+        right: env(safe-area-inset-right, 10px);
+      }
+      
+      #backHomeBtn, #fullscreenBtn {
+        padding: 8px 12px;
+        font-size: 12px;
+        min-width: 60px;
+        min-height: 35px;
+      }
+    }
+    
+    /* iPhone SE などの小さい画面 */
+    @media (max-width: 375px) and (max-height: 667px) {
+      .control-button {
+        width: 50px;
+        height: 50px;
+        font-size: 18px;
+      }
+      
+      #touchControls {
+        gap: 15px;
+      }
+    }
+    
+    /* 高解像度ディスプレイ対応 */
+    @media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
+      .control-button {
+        border-width: 2px;
+      }
+      
+      #backHomeBtn, #fullscreenBtn {
+        border-width: 1px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <canvas id="gameCanvas" width="1024" height="640"></canvas>
+
+  <button id="backHomeBtn" class="ui-button">ホーム</button>
+  <button id="fullscreenBtn" class="ui-button">全画面</button>
+  
+  <!-- タッチ操作用コントロール -->
+  <div id="touchControls">
+    <div class="control-group">
+      <div class="control-button" id="leftBtn">←</div>
+      <div class="control-button" id="rightBtn">→</div>
+    </div>
+    <div class="control-group">
+      <div class="control-button jump" id="jumpBtn">↑</div>
+    </div>
+  </div>
+
+  <img id="player" src="assets/player.png" style="display: none;">
+  <img id="player-run1" src="assets/player-run1.png" style="display: none;">
+  <img id="player-run2" src="assets/player-run2.png" style="display: none;">
+  <img id="player-jump1" src="assets/player-jump1.png" style="display: none;">
+  <img id="player-jump2" src="assets/player-jump2.png" style="display: none;">
+
+  <img id="deathGif" src="assets/death.gif" style="
+  position: fixed;
+  top: 0; left: 0;
+  width: 100vw;
+  height: 100vh;
+  height: 100dvh;
+  display: none;
+  z-index: 9999;
+  pointer-events: none;
+  object-fit: cover;
+  image-rendering: pixelated;
+" />
+
+  <div id="message" style="position:fixed;top:env(safe-area-inset-top, 10px);left:50%;transform:translateX(-50%);background:#fff;padding:8px 16px;border-radius:8px;color:#1a2a4f;display:none;z-index:9999;font-weight:bold;box-shadow:0 4px 12px rgba(0,0,0,0.2);"></div>
+
+  <!-- main-game.jsのみでテストしたい場合は、下だけでOK -->
+  <script src="main-game.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      const homeBtn = document.getElementById('backHomeBtn');
+      const fullscreenBtn = document.getElementById('fullscreenBtn');
+      
+      if (homeBtn) {
+        homeBtn.onclick = function() {
+          location.href = 'home.html';
+        };
+      }
+
+      // フルスクリーン機能
+      if (fullscreenBtn) {
+        fullscreenBtn.onclick = function() {
+          if (document.fullscreenElement) {
+            document.exitFullscreen();
+          } else {
+            document.documentElement.requestFullscreen();
+          }
+        };
+      }
+
+      // フルスクリーン状態の監視
+      document.addEventListener('fullscreenchange', function() {
+        if (document.fullscreenElement) {
+          document.body.classList.add('fullscreen-mode');
+          console.log('フルスクリーンモード開始');
+        } else {
+          document.body.classList.remove('fullscreen-mode');
+          console.log('フルスクリーンモード終了');
+        }
+      });
+
+      // ESCキーでのフルスクリーン解除
+      document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape' && document.fullscreenElement) {
+          document.exitFullscreen();
+        }
+      });
+
+      // 設定の読み込みと反映
+      function loadPlaySettings() {
+        const settings = JSON.parse(localStorage.getItem('gameSettings') || '{}');
+        
+        // フルスクリーン設定
+        if (settings.fullscreen) {
+          console.log('フルスクリーン設定が有効です');
+        }
+        
+        // 解像度設定（現在は自動調整のため、設定値は参考として保存）
+        if (settings.resolution && settings.resolution !== 'auto') {
+          console.log('解像度設定:', settings.resolution);
+        }
+        
+        console.log('プレイ設定読み込み完了');
+      }
+      loadPlaySettings();
+    });
+  </script>
+</body>
+</html>

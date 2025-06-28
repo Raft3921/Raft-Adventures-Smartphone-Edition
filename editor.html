@@ -1,0 +1,1109 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="theme-color" content="#1a2a4f">
+  <title>2Dマップエディタ（ドラッグ設置対応）</title>
+  <style>
+    * {
+      touch-action: manipulation;
+      -webkit-touch-callout: none;
+      -webkit-user-select: none;
+      -khtml-user-select: none;
+      -moz-user-select: none;
+      -ms-user-select: none;
+      user-select: none;
+      box-sizing: border-box;
+    }
+    
+    html {
+      background: linear-gradient(135deg, #1a2a4f, #0f1a2e);
+      min-height: 100vh;
+      min-height: 100dvh;
+    }
+    
+    body {
+      margin: 0;
+      font-family: "Yu Gothic", "Hiragino Kaku Gothic ProN", sans-serif;
+      background: linear-gradient(135deg, #1a2a4f, #0f1a2e);
+      color: #1a2a4f;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      overflow: hidden;
+      position: fixed;
+      width: 100vw;
+      height: 100vh;
+      height: 100dvh;
+      -webkit-overflow-scrolling: touch;
+    }
+    
+    canvas {
+      background: #aee;
+      image-rendering: pixelated;
+      image-rendering: -moz-crisp-edges;
+      image-rendering: crisp-edges;
+      border: 2px solid #1a2a4f;
+      max-width: 100vw;
+      max-height: 70vh;
+      max-height: 70dvh;
+      width: auto;
+      height: auto;
+      touch-action: none;
+      box-shadow: 0 8px 25px rgba(0,0,0,0.3);
+      border-radius: 15px;
+    }
+    
+    #slotBar {
+      display: flex;
+      justify-content: center;
+      background: rgba(255, 255, 255, 0.95);
+      border-radius: 18px;
+      padding: clamp(15px, 4vw, 20px);
+      margin: clamp(15px, 4vw, 20px);
+      gap: clamp(12px, 3vw, 15px);
+      flex-wrap: wrap;
+      max-width: 1200px;
+      width: 100%;
+      box-shadow: 0 8px 25px rgba(0,0,0,0.2);
+      margin-top: 80px;
+      backdrop-filter: blur(15px);
+      -webkit-backdrop-filter: blur(15px);
+    }
+    
+    .tile-slot {
+      width: clamp(45px, 12vw, 55px);
+      height: clamp(45px, 12vw, 55px);
+      border-radius: 20px;
+      border: none;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      cursor: pointer;
+      background: #3498db;
+      color: white;
+      font-size: clamp(12px, 3vw, 14px);
+      font-weight: bold;
+      transition: all 0.3s ease;
+      box-shadow: 0 4px 12px rgba(52, 152, 219, 0.3);
+    }
+    
+    .tile-slot:hover {
+      background: #2980b9;
+      transform: translateY(-3px);
+      box-shadow: 0 6px 18px rgba(52, 152, 219, 0.4);
+    }
+    
+    .tile-slot.selected {
+      background: #2980b9;
+      color: white;
+      transform: scale(1.1);
+      box-shadow: 0 6px 20px rgba(52, 152, 219, 0.5);
+    }
+    
+    #homeButton, #clearButton, #undoButton, #redoButton, #exportButton, #importButton {
+      position: absolute;
+      top: env(safe-area-inset-top, 10px);
+      font-size: clamp(16px, 4vw, 18px);
+      padding: clamp(12px, 3vw, 16px);
+      z-index: 999;
+      background: #3498db;
+      color: white;
+      border-radius: 20px;
+      border: none;
+      font-weight: bold;
+      cursor: pointer;
+      min-width: clamp(50px, 12vw, 60px);
+      height: clamp(50px, 12vw, 60px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 6px 20px rgba(52, 152, 219, 0.3);
+      transition: all 0.3s ease;
+    }
+    
+    #homeButton:hover, #clearButton:hover, #undoButton:hover, #redoButton:hover, #exportButton:hover, #importButton:hover {
+      background: #2980b9;
+      transform: translateY(-3px);
+      box-shadow: 0 8px 25px rgba(52, 152, 219, 0.4);
+    }
+    
+    #homeButton { left: env(safe-area-inset-left, 10px); }
+    #clearButton { left: calc(env(safe-area-inset-left, 10px) + 75px); }
+    #undoButton { left: calc(env(safe-area-inset-left, 10px) + 140px); }
+    #redoButton { left: calc(env(safe-area-inset-left, 10px) + 205px); }
+    #exportButton { left: calc(env(safe-area-inset-left, 10px) + 270px); }
+    #importButton { left: calc(env(safe-area-inset-left, 10px) + 335px); }
+    
+    #fileInput {
+      display: none;
+    }
+    
+    /* モバイル用のボタン配置 */
+    @media (max-width: 768px) {
+      #homeButton, #clearButton, #undoButton, #redoButton, #exportButton, #importButton {
+        top: env(safe-area-inset-top, 5px);
+        font-size: clamp(16px, 4vw, 18px);
+        padding: clamp(10px, 2.5vw, 15px);
+        min-width: clamp(45px, 10vw, 55px);
+        height: clamp(45px, 10vw, 55px);
+      }
+      
+      #homeButton { left: env(safe-area-inset-left, 5px); }
+      #clearButton { left: calc(env(safe-area-inset-left, 5px) + 65px); }
+      #undoButton { left: calc(env(safe-area-inset-left, 5px) + 125px); }
+      #redoButton { left: calc(env(safe-area-inset-left, 5px) + 185px); }
+      #exportButton { left: calc(env(safe-area-inset-left, 5px) + 245px); }
+      #importButton { left: calc(env(safe-area-inset-left, 5px) + 305px); }
+      
+      .tile-slot {
+        width: clamp(40px, 10vw, 50px);
+        height: clamp(40px, 10vw, 50px);
+        font-size: clamp(11px, 2.5vw, 13px);
+      }
+      
+      #slotBar {
+        padding: clamp(12px, 3vw, 15px);
+        gap: clamp(10px, 2.5vw, 12px);
+        margin-top: 70px;
+      }
+    }
+    
+    /* 小さい画面でのボタン配置（上部いっぱいに配置） */
+    @media (max-width: 600px) {
+      #homeButton, #clearButton, #undoButton, #redoButton, #exportButton, #importButton {
+        top: env(safe-area-inset-top, 5px);
+        font-size: clamp(14px, 3.5vw, 16px);
+        padding: clamp(8px, 2vw, 12px);
+        min-width: clamp(40px, 8vw, 50px);
+        height: clamp(40px, 8vw, 50px);
+      }
+      
+      /* 上部いっぱいに横並びで配置 */
+      #homeButton { left: env(safe-area-inset-left, 5px); }
+      #clearButton { left: calc(env(safe-area-inset-left, 5px) + 60px); }
+      #undoButton { left: calc(env(safe-area-inset-left, 5px) + 115px); }
+      #redoButton { left: calc(env(safe-area-inset-left, 5px) + 170px); }
+      #exportButton { left: calc(env(safe-area-inset-left, 5px) + 225px); }
+      #importButton { left: calc(env(safe-area-inset-left, 5px) + 280px); }
+      
+      .tile-slot {
+        width: clamp(35px, 8vw, 45px);
+        height: clamp(35px, 8vw, 45px);
+        font-size: clamp(10px, 2vw, 12px);
+      }
+      
+      #slotBar {
+        padding: clamp(10px, 2.5vw, 12px);
+        gap: clamp(8px, 2vw, 10px);
+        margin-top: 70px;
+        max-width: 800px;
+      }
+    }
+    
+    /* 横画面対応 */
+    @media (orientation: landscape) {
+      canvas {
+        max-height: 80vh;
+        max-height: 80dvh;
+      }
+      
+      #slotBar {
+        position: fixed;
+        bottom: env(safe-area-inset-bottom, 15px);
+        left: env(safe-area-inset-left, 15px);
+        right: env(safe-area-inset-right, 15px);
+        margin: 0;
+        margin-top: 0;
+        max-width: none;
+        width: auto;
+      }
+      
+      #homeButton, #clearButton, #undoButton, #redoButton, #exportButton, #importButton {
+        top: env(safe-area-inset-top, 5px);
+        font-size: clamp(14px, 3vw, 16px);
+        padding: clamp(8px, 2vw, 12px);
+        min-width: clamp(40px, 8vw, 50px);
+        height: clamp(40px, 8vw, 50px);
+      }
+    }
+    
+    /* iPhone SE などの小さい画面 */
+    @media (max-width: 375px) and (max-height: 667px) {
+      .tile-slot {
+        width: clamp(32px, 7vw, 40px);
+        height: clamp(32px, 7vw, 40px);
+        font-size: clamp(9px, 2vw, 11px);
+      }
+      
+      #slotBar {
+        padding: clamp(8px, 2vw, 10px);
+        gap: clamp(6px, 1.5vw, 8px);
+        margin-top: 65px;
+      }
+      
+      #homeButton, #clearButton, #undoButton, #redoButton, #exportButton, #importButton {
+        min-width: clamp(35px, 7vw, 45px);
+        height: clamp(35px, 7vw, 45px);
+        font-size: clamp(12px, 3vw, 14px);
+      }
+    }
+    
+    /* 高解像度ディスプレイ対応 */
+    @media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
+      .tile-slot {
+        border-width: 1px;
+      }
+      
+      #homeButton, #clearButton, #undoButton, #redoButton, #exportButton, #importButton {
+        border-width: 1px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div id="message" style="position:fixed;top:10px;left:50%;transform:translateX(-50%);background:#fff;padding:8px 16px;border-radius:8px;color:#1a2a4f;display:none;z-index:9999;font-weight:bold"></div>
+  <canvas id="gameCanvas" width="1024" height="640"></canvas>
+  <div id="slotBar"></div>
+  <button id="homeButton">🏠</button>
+  <button id="clearButton">🗑️</button>
+  <button id="undoButton">↶</button>
+  <button id="redoButton">↷</button>
+  <button id="exportButton">💾</button>
+  <button id="importButton">📁</button>
+  <input type="file" id="fileInput" accept=".json">
+  <script>
+    const urlParams = new URLSearchParams(window.location.search);
+    const slotName = urlParams.get("slot") || "新しいワールド";
+
+    const TILE_SIZE = 32;
+    const canvas = document.getElementById("gameCanvas");
+    const ctx = canvas.getContext("2d");
+
+    // キャンバスサイズの動的調整
+    function resizeCanvas() {
+      const maxWidth = window.innerWidth * 0.95;
+      const maxHeight = window.innerHeight * 0.7;
+      const aspectRatio = 1024 / 640; // 元のキャンバスのアスペクト比
+      
+      let newWidth = maxWidth;
+      let newHeight = maxWidth / aspectRatio;
+      
+      if (newHeight > maxHeight) {
+        newHeight = maxHeight;
+        newWidth = maxHeight * aspectRatio;
+      }
+      
+      // キャンバスの表示サイズを調整（実際の解像度は変更しない）
+      canvas.style.width = newWidth + 'px';
+      canvas.style.height = newHeight + 'px';
+      
+      console.log('エディターキャンバスサイズ調整:', {
+        width: newWidth,
+        height: newHeight
+      });
+    }
+
+    // 初期サイズ調整
+    resizeCanvas();
+
+    // ウィンドウリサイズ時の調整
+    window.addEventListener('resize', resizeCanvas);
+    window.addEventListener('orientationchange', () => {
+      setTimeout(resizeCanvas, 100); // 向き変更後に少し待ってから調整
+    });
+
+    const cols = 100;
+    const rows = 20;
+    const map = Array.from({ length: rows }, () => Array(cols).fill(0));
+
+    // 取り消し・やり直し機能の履歴管理
+    let undoHistory = [];
+    let redoHistory = [];
+    let isUndoRedoAction = false; // 取り消し・やり直し中のフラグ
+
+    // --- ワールドデータ自動読み込み ---
+    function loadWorldData() {
+      const saved = localStorage.getItem("world_" + slotName);
+      if (saved) {
+        try {
+          const mapData = JSON.parse(saved);
+          if (Array.isArray(mapData)) {
+            // 古い形式（配列のみ）
+            if (mapData.length === rows) {
+              map.length = 0;
+              map.push(...mapData);
+            }
+            window.dummyOverlays = {};
+          } else if (mapData.map && Array.isArray(mapData.map)) {
+            // 新しい形式（mapとdummyOverlaysを含む）
+            if (mapData.map.length === rows) {
+              map.length = 0;
+              map.push(...mapData.map);
+            }
+            window.dummyOverlays = mapData.dummyOverlays || {};
+          }
+        } catch (e) {
+          console.error("ワールドデータ読み込みエラー:", e);
+          // 読み込み失敗時は何もしない
+        }
+      } else {
+        // 保存データがない場合は初期化
+        window.dummyOverlays = {};
+      }
+    }
+    loadWorldData();
+
+    // 設定の読み込み
+    function loadEditorSettings() {
+      const settings = JSON.parse(localStorage.getItem('gameSettings') || '{}');
+      const keySettings = JSON.parse(localStorage.getItem('keySettings') || '{}');
+      
+      const defaults = {
+        showGrid: true,
+        snapToGrid: true
+      };
+      
+      // デフォルトキー設定
+      const defaultKeys = {
+        editorLeft: 'a',
+        editorRight: 'd',
+        editorUp: 'w',
+        editorDown: 's'
+      };
+      
+      window.showGrid = settings.showGrid !== undefined ? settings.showGrid : defaults.showGrid;
+      window.snapToGrid = settings.snapToGrid !== undefined ? settings.snapToGrid : defaults.snapToGrid;
+      
+      // エディターキー設定
+      window.editorKeys = {};
+      Object.keys(defaultKeys).forEach(key => {
+        window.editorKeys[key] = keySettings[key] || defaultKeys[key];
+      });
+      
+      console.log('エディタ設定読み込み完了:', {
+        showGrid: window.showGrid, 
+        snapToGrid: window.snapToGrid,
+        keys: window.editorKeys
+      });
+    }
+    loadEditorSettings();
+
+    // 設定変更時のリアルタイム反映
+    window.addEventListener('storage', (e) => {
+      if (e.key === 'gameSettings' || e.key === 'keySettings') {
+        console.log('エディタ設定が変更されました');
+        loadEditorSettings();
+      }
+    });
+
+    // images（0:消しゴム, 1:地面, 2:土, 3:敵, 4:ゴール, 5:石, 6:毒, 7:きのこ, 8:ハシゴ, 9:動く敵）
+    const images = {
+      0: new Image(),
+      1: new Image(),
+      2: new Image(),
+      3: new Image(),
+      4: new Image(),
+      5: new Image(),
+      6: new Image(),
+      7: new Image(),
+      8: new Image(),
+      9: new Image(),
+      10:new Image(),
+      11:new Image(), // breakable block
+      12: new Image(), // rail1
+      13: new Image(), // rail2
+      14: new Image(), // rail3
+      15: new Image(), // coin
+      16: new Image(), // checkpoint
+      17: new Image(), // goldgoal
+      19: new Image(), // dummy block
+    };
+
+    images[0].src = "assets/eraser.png";
+    images[1].src = "assets/ground.png";
+    images[2].src = "assets/dirt.png";
+    images[3].src = "assets/enemy.png";
+    images[4].src = "assets/goal.png";
+    images[5].src = "assets/stone.png";
+    images[6].src = "assets/poison.png";
+    images[7].src = "assets/trampoline.png";
+    images[8].src = "assets/ladder.png";
+    images[9].src = "assets/enemy-move1.png";
+    images[10].src = "assets/spawn.png";
+    images[11].src = "assets/breakblock.png"; // breakable block
+    images[12].src = "assets/rail1.png";
+    images[13].src = "assets/rail2.png";
+    images[14].src = "assets/rail3.png";
+    images[15].src = "assets/coin.png";
+    images[16].src = "assets/checkpoint.png";
+    images[17].src = "assets/goldgoal.png";
+    images[19].src = "assets/dummy.png"; // ダミーブロック
+    
+    // 画像読み込みエラーハンドリング
+    Object.values(images).forEach(img => {
+      img.onerror = function() {
+        console.warn('画像読み込みエラー:', img.src);
+      };
+    });
+
+    // スロットバー生成
+    const slotBar = document.getElementById("slotBar");
+    slotBar.innerHTML = "";
+    // 1, 12, 13を除外しつつ15（コイン）、16（中間地点）、17（ゴールドゴール）、19（ダミー）は含める
+    const slotIndices = Array.from({length: 20}, (_, i) => i).filter(i => i !== 1 && i !== 12 && i !== 13 && i !== 18);
+    for (const i of slotIndices) {
+      const div = document.createElement("div");
+      div.className = "tile-slot";
+      div.dataset.tile = i;
+      div.innerHTML = `<img src="${images[i].src}" width="32" height="32">`;
+      div.onclick = () => {
+        document.querySelectorAll('.tile-slot').forEach(e => e.classList.remove("selected"));
+        div.classList.add("selected");
+        selectedTile = parseInt(div.dataset.tile);
+      };
+      // デフォルトは土（2）
+      if (i === 2) div.classList.add("selected");
+      slotBar.appendChild(div);
+    }
+    let selectedTile = 2;
+
+    function showMessage(text) {
+      const msg = document.getElementById("message");
+      msg.innerText = text;
+      msg.style.display = "block";
+      setTimeout(() => { msg.style.display = "none"; }, 2000);
+    }
+
+    function showConfirm(text, onYes, onNo) {
+      let old = document.getElementById("confirmDialog");
+      if (old) old.remove();
+      const dialog = document.createElement("div");
+      dialog.id = "confirmDialog";
+      dialog.style.position = "fixed";
+      dialog.style.top = "50%";
+      dialog.style.left = "50%";
+      dialog.style.transform = "translate(-50%,-50%)";
+      dialog.style.background = "#fff";
+      dialog.style.color = "#1a2a4f";
+      dialog.style.padding = "24px 32px";
+      dialog.style.borderRadius = "18px"; // ←より大きな丸みもOK
+      dialog.style.boxShadow = "0 6px 20px rgba(0,0,0,0.15)";
+      dialog.style.zIndex = "99999";
+      dialog.style.fontWeight = "bold";
+      dialog.style.fontFamily = "\"Yu Gothic\", sans-serif";
+      dialog.innerHTML = `
+        <div style="margin-bottom:18px;font-size:18px;text-align:center;">${text}</div>
+        <div style="display:flex;gap:24px;justify-content:center;">
+          <button id="yesBtn" style="padding:10px 32px;border:none;border-radius:12px;background:#4466ff;color:#fff;font-size:16px;font-weight:bold;cursor:pointer;box-shadow:0 1px 4px #2235;">はい</button>
+          <button id="noBtn" style="padding:10px 32px;border:none;border-radius:12px;background:#ccc;color:#1a2a4f;font-size:16px;font-weight:bold;cursor:pointer;">いいえ</button>
+        </div>
+      `;
+      document.body.appendChild(dialog);
+      document.getElementById("yesBtn").onclick = () => {
+        dialog.remove();
+        if (onYes) onYes();
+      };
+      document.getElementById("noBtn").onclick = () => {
+        dialog.remove();
+        if (onNo) onNo();
+      };
+    }
+
+    // ボタンイベント
+    document.getElementById("homeButton").onclick = () => {
+      showConfirm("ホームに戻りますか？", () => {
+        // 自動保存処理
+        saveMap();
+        // サムネイル保存処理
+        draw();
+        setTimeout(function() {
+          localStorage.removeItem('thumb_' + slotName);
+          const thumbCanvas = document.createElement('canvas');
+          thumbCanvas.width = 256;
+          thumbCanvas.height = 160;
+          const thumbCtx = thumbCanvas.getContext('2d');
+          thumbCtx.drawImage(canvas, 0, 0, thumbCanvas.width, thumbCanvas.height);
+          const dataUrl = thumbCanvas.toDataURL('image/png');
+          localStorage.setItem('thumb_' + slotName, dataUrl);
+          setTimeout(function() {
+            location.href = 'home.html';
+          }, 50); // 50msだけ待つ
+        }, 0);
+      });
+    };
+    document.getElementById("clearButton").onclick = () => {
+      showConfirm("マップをクリアしますか？この操作は取り消せません。", () => {
+        saveMapState(); // クリア前の状態を保存
+        for (let r = 0; r < rows; r++) {
+          for (let c = 0; c < cols; c++) {
+            map[r][c] = 0;
+          }
+        }
+        window.dummyOverlays = {};
+        showMessage("マップをクリアしました！");
+      });
+    };
+    document.getElementById("undoButton").onclick = undo;
+    document.getElementById("redoButton").onclick = redo;
+    document.getElementById("exportButton").onclick = exportWorldData;
+    document.getElementById("importButton").onclick = () => {
+      document.getElementById("fileInput").click();
+    };
+
+    // ファイル選択時のイベント
+    document.getElementById("fileInput").addEventListener("change", (e) => {
+      const file = e.target.files[0];
+      if (file) {
+        importWorldData(file);
+        // ファイル入力をリセット（同じファイルを再度選択できるように）
+        e.target.value = "";
+      }
+    });
+
+    // キーボードショートカット
+    document.addEventListener("keydown", (e) => {
+      if (e.ctrlKey || e.metaKey) { // Ctrl (Windows) または Cmd (Mac)
+        if (e.key === "z") {
+          e.preventDefault();
+          undo();
+        } else if (e.key === "y") {
+          e.preventDefault();
+          redo();
+        }
+      }
+    });
+
+    const camera = { x: 0, y: 0 };
+    const keys = {};
+    document.addEventListener("keydown", e => keys[e.key] = true);
+    document.addEventListener("keyup", e => keys[e.key] = false);
+
+    let isMouseDown = false;
+    let hasSavedState = false; // ドラッグ中の状態保存フラグ
+    canvas.addEventListener("mousedown", e => {
+      isMouseDown = true;
+      hasSavedState = false; // ドラッグ開始時にリセット
+    });
+    canvas.addEventListener("mouseup", e => {
+      isMouseDown = false;
+      hasSavedState = false; // ドラッグ終了時にリセット
+    });
+    canvas.addEventListener("mouseleave", e => {
+      isMouseDown = false;
+      hasSavedState = false; // マウスが離れた時もリセット
+    });
+
+    canvas.addEventListener("mousemove", placeTile);
+    canvas.addEventListener("click", placeTile);
+
+    // タッチイベント対応
+    let isTouchDown = false;
+    let lastPlacedTile = { row: -1, col: -1 }; // 最後に配置したタイルの位置
+    let lastTouchTime = 0; // 最後のタッチ処理時間
+    const touchThrottle = 16; // 約60fps（16ms間隔）
+    
+    canvas.addEventListener("touchstart", e => {
+      e.preventDefault(); // デフォルトのスクロールを防ぐ
+      isTouchDown = true;
+      hasSavedState = false; // タッチ開始時にリセット
+      lastPlacedTile = { row: -1, col: -1 }; // タッチ開始時にリセット
+    });
+    canvas.addEventListener("touchend", e => {
+      e.preventDefault();
+      isTouchDown = false;
+      hasSavedState = false; // タッチ終了時にリセット
+      lastPlacedTile = { row: -1, col: -1 }; // タッチ終了時にリセット
+    });
+    canvas.addEventListener("touchcancel", e => {
+      e.preventDefault();
+      isTouchDown = false;
+      hasSavedState = false; // タッチキャンセル時もリセット
+      lastPlacedTile = { row: -1, col: -1 }; // タッチキャンセル時もリセット
+    });
+
+    canvas.addEventListener("touchmove", e => {
+      e.preventDefault(); // デフォルトのスクロールを防ぐ
+      const now = performance.now();
+      if (isTouchDown && e.touches.length > 0 && now - lastTouchTime > touchThrottle) {
+        const touch = e.touches[0];
+        placeTileTouch(touch);
+        lastTouchTime = now;
+      }
+    });
+
+    function placeTile(e) {
+      if (!isMouseDown && e.type !== "click") return;
+      const rect = canvas.getBoundingClientRect();
+      const mx = e.clientX - rect.left + camera.x;
+      const my = e.clientY - rect.top + camera.y;
+      const col = Math.floor(mx / TILE_SIZE);
+      const row = Math.floor(my / TILE_SIZE);
+      if (col >= 0 && col < cols && row >= 0 && row < rows) {
+        // ドラッグ中の最初の1回だけ、またはクリック時に状態を保存
+        if (!hasSavedState || e.type === "click") {
+          saveMapState();
+          hasSavedState = true;
+        }
+        
+        if (selectedTile === 10) {
+          for (let r = 0; r < rows; r++) {
+            for (let c = 0; c < cols; c++) {
+              if (map[r][c] === 10) map[r][c] = 0;
+            }
+          }
+          map[row][col] = 10;
+        } else if (selectedTile === 19) { // ダミーブロック
+          // ダミーブロックは既存ブロックの上にのみ置ける
+          const existingTile = map[row][col];
+          if (existingTile !== 0 && existingTile !== 19) {
+            // 既存ブロックの上にダミーを重ねる（見た目は元のブロック、当たり判定なし）
+            map[row][col] = 19; // ダミーブロックとして記録
+            // 元のブロックの情報を保存（見た目用）
+            if (!window.dummyOverlays) window.dummyOverlays = {};
+            window.dummyOverlays[`${row},${col}`] = existingTile;
+          }
+        } else if (selectedTile === 14) { // rail3を設置
+          map[row][col] = 14;
+          // 連結判定して自動置換
+          updateRailTiles(row, col);
+          // 両隣も更新
+          if (col > 0) updateRailTiles(row, col - 1);
+          if (col < cols - 1) updateRailTiles(row, col + 1);
+        } else if (selectedTile === 2) { // 土
+          // dirtを置いた時、上に何もなければground、そうでなければdirt
+          if (row === 0 || map[row-1][col] === 0) {
+            map[row][col] = 1;
+          } else {
+            map[row][col] = 2;
+          }
+          // すべてのgroundについて、上に何かあればdirtに変換
+          for (let r = 0; r < rows; r++) {
+            for (let c = 0; c < cols; c++) {
+              if (map[r][c] === 1 && r > 0 && map[r-1][c] !== 0) {
+                map[r][c] = 2;
+              }
+            }
+          }
+        } else {
+          map[row][col] = selectedTile;
+        }
+      }
+    }
+
+    function placeTileTouch(touch) {
+      const rect = canvas.getBoundingClientRect();
+      const mx = touch.clientX - rect.left + camera.x;
+      const my = touch.clientY - rect.top + camera.y;
+      const col = Math.floor(mx / TILE_SIZE);
+      const row = Math.floor(my / TILE_SIZE);
+      
+      // 同じタイルに重複配置しないようにチェック
+      if (col === lastPlacedTile.col && row === lastPlacedTile.row) {
+        return;
+      }
+      
+      if (col >= 0 && col < cols && row >= 0 && row < rows) {
+        // 最後に配置したタイルの位置を記録
+        lastPlacedTile = { row, col };
+        
+        // タッチ中の最初の1回だけ状態を保存
+        if (!hasSavedState) {
+          saveMapState();
+          hasSavedState = true;
+        }
+        
+        if (selectedTile === 10) {
+          for (let r = 0; r < rows; r++) {
+            for (let c = 0; c < cols; c++) {
+              if (map[r][c] === 10) map[r][c] = 0;
+            }
+          }
+          map[row][col] = 10;
+        } else if (selectedTile === 19) { // ダミーブロック
+          // ダミーブロックは既存ブロックの上にのみ置ける
+          const existingTile = map[row][col];
+          if (existingTile !== 0 && existingTile !== 19) {
+            // 既存ブロックの上にダミーを重ねる（見た目は元のブロック、当たり判定なし）
+            map[row][col] = 19; // ダミーブロックとして記録
+            // 元のブロックの情報を保存（見た目用）
+            if (!window.dummyOverlays) window.dummyOverlays = {};
+            window.dummyOverlays[`${row},${col}`] = existingTile;
+          }
+        } else if (selectedTile === 14) { // rail3を設置
+          map[row][col] = 14;
+          // 連結判定して自動置換
+          updateRailTiles(row, col);
+          // 両隣も更新
+          if (col > 0) updateRailTiles(row, col - 1);
+          if (col < cols - 1) updateRailTiles(row, col + 1);
+        } else if (selectedTile === 2) { // 土
+          // dirtを置いた時、上に何もなければground、そうでなければdirt
+          if (row === 0 || map[row-1][col] === 0) {
+            map[row][col] = 1;
+          } else {
+            map[row][col] = 2;
+          }
+          // すべてのgroundについて、上に何かあればdirtに変換
+          for (let r = 0; r < rows; r++) {
+            for (let c = 0; c < cols; c++) {
+              if (map[r][c] === 1 && r > 0 && map[r-1][c] !== 0) {
+                map[r][c] = 2;
+              }
+            }
+          }
+        } else {
+          map[row][col] = selectedTile;
+        }
+      }
+    }
+
+    // レール連結状態に応じてタイルIDを自動で置換
+    function updateRailTiles(row, col) {
+      if (map[row][col] < 12 || map[row][col] > 14) return;
+      const left = col > 0 && map[row][col - 1] >= 12 && map[row][col - 1] <= 14;
+      const right = col < cols - 1 && map[row][col + 1] >= 12 && map[row][col + 1] <= 14;
+      if (!left && !right) {
+        map[row][col] = 14; // 単体
+      } else if (left && right) {
+        map[row][col] = 12; // 中間
+      } else if (right) {
+        map[row][col] = 13; // 右端
+      } else if (left) {
+        map[row][col] = 13; // 左端（反転描画は描画時に）
+      }
+    }
+
+    function update() {
+      const camSpeed = 8;
+      // キー設定を使用したカメラ移動
+      const leftKey = window.editorKeys?.editorLeft || 'a';
+      const rightKey = window.editorKeys?.editorRight || 'd';
+      const upKey = window.editorKeys?.editorUp || 'w';
+      const downKey = window.editorKeys?.editorDown || 's';
+      
+      if (keys[leftKey.toLowerCase()] || keys[leftKey.toUpperCase()] || keys["ArrowLeft"]) camera.x -= camSpeed;
+      if (keys[rightKey.toLowerCase()] || keys[rightKey.toUpperCase()] || keys["ArrowRight"]) camera.x += camSpeed;
+      if (keys[upKey.toLowerCase()] || keys[upKey.toUpperCase()] || keys["ArrowUp"]) camera.y -= camSpeed;
+      if (keys[downKey.toLowerCase()] || keys[downKey.toUpperCase()] || keys["ArrowDown"]) camera.y += camSpeed;
+      camera.x = Math.max(0, Math.min(camera.x, cols * TILE_SIZE - canvas.width));
+      camera.y = Math.max(0, Math.min(camera.y, rows * TILE_SIZE - canvas.height));
+      
+      // 土と草の変換処理（0.5秒間に一度）
+      if (!window.groundDirtTimer) window.groundDirtTimer = 0;
+      window.groundDirtTimer++;
+      if (window.groundDirtTimer >= 30) { // 60fps * 0.5秒 = 30フレーム
+        for (let r = 0; r < rows; r++) {
+          for (let c = 0; c < cols; c++) {
+            if (map[r][c] === 1 && r > 0 && map[r-1][c] !== 0) {
+              // スコアをゲットできるブロック、チェックポイント、スポーン地点、動く敵は除外
+              const tileAbove = map[r-1][c];
+              if (tileAbove !== 4 && tileAbove !== 15 && tileAbove !== 16 && tileAbove !== 17 && tileAbove !== 10 && tileAbove !== 3) {
+                map[r][c] = 2; // groundの上に何かあればdirtに変換
+              }
+            }
+            if (map[r][c] === 2 && (r === 0 || map[r-1][c] === 0)) {
+              map[r][c] = 1; // dirtの上に何もなければgroundに変換
+            }
+          }
+        }
+        window.groundDirtTimer = 0;
+      }
+    }
+    
+
+    function draw() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.fillStyle = "#aee";
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      
+      // 1. 通常のタイルを描画（ダミーブロックは除外）
+      for (let r = 0; r < rows; r++) {
+        for (let c = 0; c < cols; c++) {
+          const tile = map[r][c];
+          const x = c * TILE_SIZE - camera.x;
+          const y = r * TILE_SIZE - camera.y;
+          
+          // ダミーブロックは後で描画するのでスキップ
+          if (tile === 19) continue;
+          
+          if (tile >= 12 && tile <= 14) {
+            // レール描画
+            if (tile === 12) {
+              ctx.drawImage(images[12], x, y, TILE_SIZE, TILE_SIZE); // 中間
+            } else if (tile === 13) {
+              // 左端か右端か判定
+              const left = c > 0 && map[r][c-1] >= 12 && map[r][c-1] <= 14;
+              if (left) {
+                // 右端
+                ctx.drawImage(images[13], x, y, TILE_SIZE, TILE_SIZE);
+              } else {
+                // 左端（反転）
+                ctx.save();
+                ctx.translate(x + TILE_SIZE, y);
+                ctx.scale(-1, 1);
+                ctx.drawImage(images[13], 0, 0, TILE_SIZE, TILE_SIZE);
+                ctx.restore();
+              }
+            } else if (tile === 14) {
+              ctx.drawImage(images[14], x, y, TILE_SIZE, TILE_SIZE); // 単体
+            }
+          } else if (tile !== 0 && images[tile]) {
+            ctx.drawImage(images[tile], x, y, TILE_SIZE, TILE_SIZE);
+          }
+        }
+      }
+      
+      // 2. ダミーブロックを一番手前に描画
+      for (let r = 0; r < rows; r++) {
+        for (let c = 0; c < cols; c++) {
+          const tile = map[r][c];
+          if (tile === 19 && window.dummyOverlays && window.dummyOverlays[`${r},${c}`]) {
+            const x = c * TILE_SIZE - camera.x;
+            const y = r * TILE_SIZE - camera.y;
+            const drawTile = window.dummyOverlays[`${r},${c}`];
+            
+            // ダミーブロックの見た目を描画（元のブロックの見た目）
+            if (drawTile >= 12 && drawTile <= 14) {
+              // レール描画
+              if (drawTile === 12) {
+                ctx.drawImage(images[12], x, y, TILE_SIZE, TILE_SIZE); // 中間
+              } else if (drawTile === 13) {
+                // 左端か右端か判定
+                const left = c > 0 && map[r][c-1] >= 12 && map[r][c-1] <= 14;
+                if (left) {
+                  // 右端
+                  ctx.drawImage(images[13], x, y, TILE_SIZE, TILE_SIZE);
+                } else {
+                  // 左端（反転）
+                  ctx.save();
+                  ctx.translate(x + TILE_SIZE, y);
+                  ctx.scale(-1, 1);
+                  ctx.drawImage(images[13], 0, 0, TILE_SIZE, TILE_SIZE);
+                  ctx.restore();
+                }
+              } else if (drawTile === 14) {
+                ctx.drawImage(images[14], x, y, TILE_SIZE, TILE_SIZE); // 単体
+              }
+            } else if (drawTile !== 0 && images[drawTile]) {
+              ctx.drawImage(images[drawTile], x, y, TILE_SIZE, TILE_SIZE);
+            }
+            
+            // ダミーブロックであることを示すオーバーレイ（半透明の赤い枠）
+            ctx.save();
+            ctx.strokeStyle = "rgba(255, 0, 0, 0.7)";
+            ctx.lineWidth = 2;
+            ctx.strokeRect(x + 1, y + 1, TILE_SIZE - 2, TILE_SIZE - 2);
+            ctx.restore();
+          }
+        }
+      }
+      
+      // グリッド描画
+      if (window.showGrid) {
+        ctx.strokeStyle = "rgba(255, 255, 255, 0.3)";
+        ctx.lineWidth = 1;
+        // 縦線
+        for (let c = 0; c <= cols; c++) {
+          const x = c * TILE_SIZE - camera.x;
+          ctx.beginPath();
+          ctx.moveTo(x, 0);
+          ctx.lineTo(x, canvas.height);
+          ctx.stroke();
+        }
+        // 横線
+        for (let r = 0; r <= rows; r++) {
+          const y = r * TILE_SIZE - camera.y;
+          ctx.beginPath();
+          ctx.moveTo(0, y);
+          ctx.lineTo(canvas.width, y);
+          ctx.stroke();
+        }
+      }
+    }
+
+    function gameLoop() {
+      update();
+      draw();
+      requestAnimationFrame(gameLoop);
+    }
+
+    Promise.all(Object.values(images).map(img => new Promise(res => img.onload = res))).then(() => {
+      gameLoop();
+    });
+
+    function saveMap() {
+      const mapData = {
+        map: map,
+        dummyOverlays: window.dummyOverlays || {}
+      };
+      localStorage.setItem("world_" + slotName, JSON.stringify(mapData));
+    }
+
+    function loadMap() {
+      const saved = localStorage.getItem("world_" + slotName);
+      if (saved) {
+        try {
+          const mapData = JSON.parse(saved);
+          if (Array.isArray(mapData)) {
+            // 古い形式（配列のみ）
+            map.length = 0;
+            map.push(...mapData);
+            window.dummyOverlays = {};
+            showMessage("マップを読み込みました！");
+          } else if (mapData.map && Array.isArray(mapData.map)) {
+            // 新しい形式（mapとdummyOverlaysを含む）
+            map.length = 0;
+            map.push(...mapData.map);
+            window.dummyOverlays = mapData.dummyOverlays || {};
+            showMessage("マップを読み込みました！");
+          }
+        } catch (e) {
+          showMessage("読み込みエラー: " + e.message);
+        }
+      } else {
+        showMessage("保存されたマップがありません！");
+      }
+    }
+
+    // マップの状態を保存
+    function saveMapState() {
+      if (isUndoRedoAction) return; // 取り消し・やり直し中は保存しない
+      
+      const mapCopy = map.map(row => [...row]); // ディープコピー
+      const dummyOverlaysCopy = window.dummyOverlays ? JSON.parse(JSON.stringify(window.dummyOverlays)) : {};
+      
+      undoHistory.push({
+        map: mapCopy,
+        dummyOverlays: dummyOverlaysCopy
+      });
+      
+      // 履歴は最大20個まで保持
+      if (undoHistory.length > 20) {
+        undoHistory.shift();
+      }
+      
+      // やり直し履歴をクリア
+      redoHistory = [];
+    }
+
+    // 取り消し機能
+    function undo() {
+      if (undoHistory.length === 0) {
+        showMessage("取り消す操作がありません");
+        return;
+      }
+      
+      // 現在の状態をやり直し履歴に保存
+      const currentMap = map.map(row => [...row]);
+      const currentDummyOverlays = window.dummyOverlays ? JSON.parse(JSON.stringify(window.dummyOverlays)) : {};
+      redoHistory.push({
+        map: currentMap,
+        dummyOverlays: currentDummyOverlays
+      });
+      
+      // 前の状態を復元
+      const previousState = undoHistory.pop();
+      isUndoRedoAction = true;
+      
+      map.length = 0;
+      map.push(...previousState.map);
+      window.dummyOverlays = previousState.dummyOverlays;
+      
+      isUndoRedoAction = false;
+      showMessage("取り消しました");
+    }
+
+    // やり直し機能
+    function redo() {
+      if (redoHistory.length === 0) {
+        showMessage("やり直す操作がありません");
+        return;
+      }
+      
+      // 現在の状態をやり直し履歴に保存
+      const currentMap = map.map(row => [...row]);
+      const currentDummyOverlays = window.dummyOverlays ? JSON.parse(JSON.stringify(window.dummyOverlays)) : {};
+      redoHistory.push({
+        map: currentMap,
+        dummyOverlays: currentDummyOverlays
+      });
+      
+      // 次の状態を復元
+      const nextState = redoHistory.pop();
+      isUndoRedoAction = true;
+      
+      map.length = 0;
+      map.push(...nextState.map);
+      window.dummyOverlays = nextState.dummyOverlays;
+      
+      isUndoRedoAction = false;
+      showMessage("やり直しました");
+    }
+
+    // ワールドデータをJSONファイルとしてエクスポート
+    function exportWorldData() {
+      const worldData = {
+        name: slotName,
+        map: map,
+        dummyOverlays: window.dummyOverlays || {},
+        exportDate: new Date().toISOString(),
+        version: "1.0"
+      };
+      
+      const dataStr = JSON.stringify(worldData, null, 2);
+      const dataBlob = new Blob([dataStr], {type: 'application/json'});
+      
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(dataBlob);
+      link.download = `${slotName}_world.json`;
+      link.click();
+      
+      URL.revokeObjectURL(link.href);
+      showMessage("ワールドデータをエクスポートしました！");
+    }
+
+    // JSONファイルからワールドデータをインポート
+    function importWorldData(file) {
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        try {
+          const worldData = JSON.parse(e.target.result);
+          
+          // データ形式の検証
+          if (!worldData.map || !Array.isArray(worldData.map)) {
+            showMessage("無効なワールドデータファイルです");
+            return;
+          }
+          
+          if (worldData.map.length !== rows) {
+            showMessage("マップサイズが一致しません");
+            return;
+          }
+          
+          showConfirm(`ワールド「${worldData.name || '不明'}」を読み込みますか？現在のマップは上書きされます。`, () => {
+            // 現在の状態を履歴に保存
+            saveMapState();
+            
+            // データを読み込み
+            map.length = 0;
+            map.push(...worldData.map);
+            window.dummyOverlays = worldData.dummyOverlays || {};
+            
+            showMessage("ワールドデータをインポートしました！");
+          });
+          
+        } catch (error) {
+          showMessage("ファイルの読み込みに失敗しました: " + error.message);
+        }
+      };
+      reader.readAsText(file);
+    }
+
+  </script>
+</body>
+</html>

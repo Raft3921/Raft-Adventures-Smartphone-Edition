@@ -1,0 +1,647 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="theme-color" content="#1a2a4f">
+  <title>設定 - ラフトの冒険</title>
+  <style>
+    * {
+      touch-action: manipulation;
+      -webkit-touch-callout: none;
+      -webkit-user-select: none;
+      -khtml-user-select: none;
+      -moz-user-select: none;
+      -ms-user-select: none;
+      user-select: none;
+      box-sizing: border-box;
+    }
+    
+    html {
+      background: linear-gradient(135deg, #1a2a4f, #0f1a2e);
+      min-height: 100vh;
+      min-height: 100dvh;
+    }
+    
+    body {
+      margin: 0;
+      font-family: 'Segoe UI', 'Meiryo', 'Hiragino Kaku Gothic ProN', sans-serif;
+      background: linear-gradient(135deg, #1a2a4f, #0f1a2e);
+      color: white;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      min-height: 100dvh;
+      padding: env(safe-area-inset-top, 10px) env(safe-area-inset-right, 10px) env(safe-area-inset-bottom, 10px) env(safe-area-inset-left, 10px);
+      box-sizing: border-box;
+      -webkit-overflow-scrolling: touch;
+    }
+    
+    .settings-container {
+      background: rgba(255, 255, 255, 0.95);
+      color: #0a1b2a;
+      border-radius: 20px;
+      padding: clamp(20px, 5vw, 30px);
+      max-width: 100%;
+      width: 100%;
+      max-width: 600px;
+      box-shadow: 0 15px 40px rgba(0,0,0,0.3);
+      overflow-y: auto;
+      max-height: 90vh;
+      max-height: 90dvh;
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+    }
+    
+    h1 {
+      text-align: center;
+      margin-bottom: 25px;
+      color: #1a2a4f;
+      font-size: clamp(24px, 6vw, 32px);
+      font-weight: bold;
+      text-shadow: 1px 1px 2px rgba(0,0,0,0.1);
+    }
+    
+    .setting-section {
+      margin-bottom: 25px;
+      padding: clamp(15px, 4vw, 20px);
+      background: rgba(248, 249, 250, 0.8);
+      border-radius: 15px;
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    }
+    
+    .setting-section h2 {
+      margin-top: 0;
+      color: #1a2a4f;
+      border-bottom: 3px solid #4466ff;
+      padding-bottom: 10px;
+      font-size: clamp(18px, 4.5vw, 22px);
+      font-weight: bold;
+    }
+    
+    .setting-item {
+      margin-bottom: 20px;
+    }
+    
+    .setting-item label {
+      display: block;
+      margin-bottom: 8px;
+      font-weight: bold;
+      color: #1a2a4f;
+      font-size: clamp(15px, 4vw, 18px);
+    }
+    
+    .setting-item input[type="range"] {
+      width: 100%;
+      margin: 10px 0;
+      min-height: 35px;
+      -webkit-appearance: none;
+      appearance: none;
+      background: #e9ecef;
+      border-radius: 10px;
+      outline: none;
+    }
+    
+    .setting-item input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 25px;
+      height: 25px;
+      background: #4466ff;
+      border-radius: 50%;
+      cursor: pointer;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+    }
+    
+    .setting-item input[type="range"]::-moz-range-thumb {
+      width: 25px;
+      height: 25px;
+      background: #4466ff;
+      border-radius: 50%;
+      cursor: pointer;
+      border: none;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+    }
+    
+    .setting-item input[type="checkbox"] {
+      margin-right: 10px;
+      transform: scale(1.3);
+      accent-color: #4466ff;
+    }
+    
+    .setting-item select {
+      width: 100%;
+      padding: 12px;
+      border: 2px solid #ddd;
+      border-radius: 10px;
+      font-size: clamp(15px, 4vw, 18px);
+      min-height: 50px;
+      background: white;
+      color: #1a2a4f;
+      font-weight: 500;
+    }
+    
+    .setting-item select:focus {
+      outline: none;
+      border-color: #4466ff;
+      box-shadow: 0 0 0 3px rgba(68, 102, 255, 0.1);
+    }
+    
+    .value-display {
+      background: #e9ecef;
+      padding: 6px 12px;
+      border-radius: 8px;
+      display: inline-block;
+      margin-left: 10px;
+      font-weight: bold;
+      font-size: clamp(13px, 3.5vw, 16px);
+      color: #1a2a4f;
+    }
+    
+    .buttons {
+      text-align: center;
+      margin-top: 30px;
+    }
+    
+    button {
+      background: #3498db;
+      color: white;
+      border: none;
+      padding: clamp(15px, 4vw, 18px) clamp(30px, 7vw, 40px);
+      font-size: clamp(16px, 4.5vw, 18px);
+      border-radius: 20px;
+      cursor: pointer;
+      margin: 10px;
+      font-weight: bold;
+      min-height: 55px;
+      transition: all 0.3s ease;
+      box-shadow: 0 6px 20px rgba(52, 152, 219, 0.3);
+    }
+    
+    button:hover {
+      background: #2980b9;
+      transform: translateY(-3px);
+      box-shadow: 0 8px 25px rgba(52, 152, 219, 0.4);
+    }
+    
+    button:active {
+      transform: translateY(-1px);
+      box-shadow: 0 4px 15px rgba(52, 152, 219, 0.3);
+    }
+    
+    button.secondary {
+      background: #6c757d;
+    }
+    
+    button.secondary:hover {
+      background: #5a6268;
+    }
+    
+    .key-button {
+      background: rgba(248, 249, 250, 0.9);
+      border: 2px solid #ddd;
+      color: #1a2a4f;
+      padding: clamp(12px, 3vw, 15px) clamp(18px, 4vw, 22px);
+      border-radius: 20px;
+      cursor: pointer;
+      font-weight: bold;
+      min-width: 70px;
+      min-height: 55px;
+      text-align: center;
+      transition: all 0.3s ease;
+      font-size: clamp(15px, 4vw, 18px);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    }
+    
+    .key-button:hover {
+      background: rgba(233, 236, 239, 0.95);
+      border-color: #3498db;
+      transform: translateY(-2px);
+      box-shadow: 0 6px 16px rgba(0,0,0,0.15);
+    }
+    
+    .key-button:active {
+      transform: translateY(0);
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    
+    .key-button.setting {
+      background: #3498db;
+      color: white;
+      border-color: #3498db;
+      animation: pulse 1.5s infinite;
+      box-shadow: 0 6px 20px rgba(52, 152, 219, 0.4);
+    }
+    
+    @keyframes pulse {
+      0% { transform: scale(1); }
+      50% { transform: scale(1.05); }
+      100% { transform: scale(1); }
+    }
+    
+    .character-option {
+      display: flex;
+      align-items: center;
+      margin: 10px 0;
+      padding: 10px;
+      border-radius: 10px;
+      transition: all 0.2s ease;
+    }
+    
+    .character-option:hover {
+      background: rgba(68, 102, 255, 0.1);
+    }
+    
+    .character-option input[type="radio"] {
+      display: none;
+    }
+    
+    .character-label {
+      display: flex;
+      align-items: center;
+      cursor: pointer;
+      font-size: clamp(15px, 4vw, 18px);
+      font-weight: 500;
+      color: #1a2a4f;
+      width: 100%;
+    }
+    
+    .character-label::before {
+      content: '';
+      width: 20px;
+      height: 20px;
+      border: 2px solid #4466ff;
+      border-radius: 50%;
+      margin-right: 12px;
+      position: relative;
+      transition: all 0.2s ease;
+    }
+    
+    .character-option input[type="radio"]:checked + .character-label::before {
+      background: #4466ff;
+      box-shadow: inset 0 0 0 4px white;
+    }
+    
+    .character-option input[type="radio"]:checked + .character-label {
+      font-weight: bold;
+      color: #4466ff;
+    }
+    
+    .menu-button {
+      display: block;
+      width: clamp(280px, 80vw, 350px);
+      height: clamp(70px, 15vw, 85px);
+      margin: 20px auto;
+      font-size: clamp(18px, 4.5vw, 22px);
+      font-weight: bold;
+      color: white;
+      background: #3498db;
+      border: none;
+      border-radius: 20px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      box-shadow: 0 8px 25px rgba(52, 152, 219, 0.3);
+      text-decoration: none;
+      line-height: clamp(70px, 15vw, 85px);
+    }
+    
+    .menu-button:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 10px 30px rgba(52, 152, 219, 0.4);
+      background: #2980b9;
+    }
+    
+    /* 横画面対応 */
+    @media (orientation: landscape) {
+      body {
+        padding: env(safe-area-inset-top, 5px) env(safe-area-inset-right, 5px) env(safe-area-inset-bottom, 5px) env(safe-area-inset-left, 5px);
+      }
+      
+      .settings-container {
+        padding: clamp(15px, 3vw, 20px);
+        max-height: 95vh;
+        max-height: 95dvh;
+      }
+      
+      h1 {
+        margin-bottom: 15px;
+        font-size: clamp(20px, 5vw, 26px);
+      }
+      
+      .setting-section {
+        margin-bottom: 15px;
+        padding: clamp(10px, 3vw, 15px);
+      }
+      
+      button {
+        margin: 8px;
+        padding: 12px 20px;
+        min-height: 50px;
+      }
+      
+      .menu-button {
+        margin: 15px auto;
+        height: clamp(60px, 12vw, 75px);
+        line-height: clamp(60px, 12vw, 75px);
+      }
+    }
+    
+    /* 小さい画面対応 */
+    @media (max-width: 480px) {
+      body {
+        padding: env(safe-area-inset-top, 5px) env(safe-area-inset-right, 5px) env(safe-area-inset-bottom, 5px) env(safe-area-inset-left, 5px);
+      }
+      
+      .settings-container {
+        padding: clamp(15px, 4vw, 20px);
+        border-radius: 15px;
+      }
+      
+      .setting-section {
+        padding: clamp(12px, 3vw, 15px);
+        margin-bottom: 20px;
+      }
+      
+      button {
+        margin: 8px;
+        padding: 12px 18px;
+        min-height: 50px;
+      }
+      
+      .key-button {
+        min-width: 60px;
+        min-height: 50px;
+        padding: 10px 15px;
+      }
+    }
+    
+    /* iPhone SE などの小さい画面 */
+    @media (max-width: 375px) and (max-height: 667px) {
+      h1 {
+        font-size: clamp(20px, 6vw, 26px);
+        margin-bottom: 20px;
+      }
+      
+      .setting-section {
+        padding: 12px;
+        margin-bottom: 15px;
+      }
+      
+      .menu-button {
+        height: 65px;
+        line-height: 65px;
+        margin: 15px auto;
+      }
+    }
+    
+    /* 高解像度ディスプレイ対応 */
+    @media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
+      button, .menu-button, .key-button {
+        border-width: 1px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="settings-container">
+    <h1>設定</h1>
+    
+    <!-- ゲーム設定 -->
+    <div class="setting-section">
+      <h2>ゲーム設定</h2>
+      
+      <div class="setting-item">
+        <label for="fullscreen">フルスクリーンモード</label>
+        <input type="checkbox" id="fullscreen" name="fullscreen">
+        <span>ゲーム開始時にフルスクリーンで起動</span>
+      </div>
+      
+      <div class="setting-item">
+        <label for="resolution">解像度設定</label>
+        <select id="resolution" name="resolution">
+          <option value="auto">自動調整（推奨）</option>
+          <option value="low">低解像度（軽量）</option>
+          <option value="medium">中解像度（バランス）</option>
+          <option value="high">高解像度（高品質）</option>
+        </select>
+      </div>
+      
+      <div class="setting-item">
+        <label for="volume">音量</label>
+        <input type="range" id="volume" name="volume" min="0" max="100" value="50">
+        <span class="value-display" id="volumeValue">50%</span>
+      </div>
+    </div>
+    
+    <!-- キャラクター設定 -->
+    <div class="setting-section">
+      <h2>キャラクター設定</h2>
+      
+      <div class="character-option">
+        <input type="radio" id="charRaft" name="character" value="raft" checked>
+        <label for="charRaft" class="character-label">ラフト（デフォルト）</label>
+      </div>
+      
+      <div class="character-option">
+        <input type="radio" id="charMai" name="character" value="mai">
+        <label for="charMai" class="character-label">まい</label>
+      </div>
+      
+      <div class="character-option">
+        <input type="radio" id="charTanutsuna" name="character" value="tanutsuna">
+        <label for="charTanutsuna" class="character-label">たぬつな</label>
+      </div>
+    </div>
+    
+    <!-- キー設定 -->
+    <div class="setting-section">
+      <h2>キー設定</h2>
+      <p style="color: #666; font-size: clamp(13px, 3.5vw, 16px); margin-bottom: 15px;">
+        キーをクリックして変更してください
+      </p>
+      
+      <div class="setting-item">
+        <label>左移動</label>
+        <button class="key-button" id="leftKey">A</button>
+      </div>
+      
+      <div class="setting-item">
+        <label>右移動</label>
+        <button class="key-button" id="rightKey">D</button>
+      </div>
+      
+      <div class="setting-item">
+        <label>ジャンプ</label>
+        <button class="key-button" id="jumpKey">Space</button>
+      </div>
+    </div>
+    
+    <!-- ボタン -->
+    <div class="buttons">
+      <button id="saveBtn">設定を保存</button>
+      <button id="resetBtn" class="secondary">リセット</button>
+      <a href="home.html" class="menu-button">ホームに戻る</a>
+    </div>
+  </div>
+  
+  <script>
+    // 設定の読み込み
+    function loadSettings() {
+      const settings = JSON.parse(localStorage.getItem('gameSettings') || '{}');
+      
+      // フルスクリーン設定
+      document.getElementById('fullscreen').checked = settings.fullscreen || false;
+      
+      // 解像度設定
+      document.getElementById('resolution').value = settings.resolution || 'auto';
+      
+      // 音量設定
+      const volumeSlider = document.getElementById('volume');
+      const volumeValue = document.getElementById('volumeValue');
+      volumeSlider.value = settings.volume || 50;
+      volumeValue.textContent = volumeSlider.value + '%';
+      
+      // キャラクター設定
+      const character = settings.character || 'raft';
+      document.getElementById('char' + character.charAt(0).toUpperCase() + character.slice(1)).checked = true;
+      
+      // キー設定
+      document.getElementById('leftKey').textContent = settings.leftKey || 'A';
+      document.getElementById('rightKey').textContent = settings.rightKey || 'D';
+      document.getElementById('jumpKey').textContent = settings.jumpKey || 'Space';
+    }
+    
+    // 設定の保存
+    function saveSettings() {
+      const settings = {
+        fullscreen: document.getElementById('fullscreen').checked,
+        resolution: document.getElementById('resolution').value,
+        volume: document.getElementById('volume').value,
+        character: document.querySelector('input[name="character"]:checked').value,
+        leftKey: document.getElementById('leftKey').textContent,
+        rightKey: document.getElementById('rightKey').textContent,
+        jumpKey: document.getElementById('jumpKey').textContent
+      };
+      
+      localStorage.setItem('gameSettings', JSON.stringify(settings));
+      showMessage('設定を保存しました！');
+    }
+    
+    // 設定のリセット
+    function resetSettings() {
+      if (confirm('設定をリセットしますか？')) {
+        localStorage.removeItem('gameSettings');
+        loadSettings();
+        showMessage('設定をリセットしました！');
+      }
+    }
+    
+    // メッセージ表示
+    function showMessage(text) {
+      const message = document.createElement('div');
+      message.textContent = text;
+      message.style.cssText = `
+        position: fixed;
+        top: env(safe-area-inset-top, 20px);
+        left: 50%;
+        transform: translateX(-50%);
+        background: #4466ff;
+        color: white;
+        padding: 12px 20px;
+        border-radius: 10px;
+        font-weight: bold;
+        z-index: 9999;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+        animation: fadeInOut 3s ease-in-out;
+      `;
+      
+      document.body.appendChild(message);
+      
+      setTimeout(() => {
+        document.body.removeChild(message);
+      }, 3000);
+    }
+    
+    // キー設定の変更
+    let settingKey = null;
+    
+    function setupKeyButtons() {
+      const keyButtons = document.querySelectorAll('.key-button');
+      
+      keyButtons.forEach(button => {
+        button.addEventListener('click', function() {
+          if (settingKey) {
+            settingKey.classList.remove('setting');
+          }
+          
+          settingKey = this;
+          this.classList.add('setting');
+          this.textContent = '押してください...';
+          
+          const handleKeyPress = (e) => {
+            e.preventDefault();
+            this.textContent = e.key.toUpperCase();
+            this.classList.remove('setting');
+            settingKey = null;
+            
+            document.removeEventListener('keydown', handleKeyPress);
+            document.removeEventListener('click', handleClick);
+          };
+          
+          const handleClick = (e) => {
+            if (e.target !== this) {
+              this.textContent = this.textContent === '押してください...' ? 'A' : this.textContent;
+              this.classList.remove('setting');
+              settingKey = null;
+              
+              document.removeEventListener('keydown', handleKeyPress);
+              document.removeEventListener('click', handleClick);
+            }
+          };
+          
+          document.addEventListener('keydown', handleKeyPress);
+          document.addEventListener('click', handleClick);
+        });
+      });
+    }
+    
+    // 音量スライダーの更新
+    function setupVolumeSlider() {
+      const volumeSlider = document.getElementById('volume');
+      const volumeValue = document.getElementById('volumeValue');
+      
+      volumeSlider.addEventListener('input', function() {
+        volumeValue.textContent = this.value + '%';
+      });
+    }
+    
+    // イベントリスナーの設定
+    document.addEventListener('DOMContentLoaded', function() {
+      loadSettings();
+      setupKeyButtons();
+      setupVolumeSlider();
+      
+      document.getElementById('saveBtn').addEventListener('click', saveSettings);
+      document.getElementById('resetBtn').addEventListener('click', resetSettings);
+    });
+    
+    // CSS アニメーション
+    const style = document.createElement('style');
+    style.textContent = `
+      @keyframes fadeInOut {
+        0% { opacity: 0; transform: translateX(-50%) translateY(-20px); }
+        20% { opacity: 1; transform: translateX(-50%) translateY(0); }
+        80% { opacity: 1; transform: translateX(-50%) translateY(0); }
+        100% { opacity: 0; transform: translateX(-50%) translateY(-20px); }
+      }
+    `;
+    document.head.appendChild(style);
+  </script>
+</body>
+</html> 
