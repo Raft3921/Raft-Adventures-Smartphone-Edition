@@ -63,9 +63,9 @@
       justify-content: center;
       background: rgba(255, 255, 255, 0.95);
       border-radius: 18px;
-      padding: clamp(15px, 4vw, 20px);
+      padding: var(--slot-bar-padding, clamp(15px, 4vw, 20px));
       margin: clamp(15px, 4vw, 20px);
-      gap: clamp(12px, 3vw, 15px);
+      gap: var(--slot-bar-gap, clamp(12px, 3vw, 15px));
       flex-wrap: wrap;
       max-width: 1200px;
       width: 100%;
@@ -76,8 +76,8 @@
     }
     
     .tile-slot {
-      width: clamp(45px, 12vw, 55px);
-      height: clamp(45px, 12vw, 55px);
+      width: var(--tile-slot-size, clamp(45px, 12vw, 55px));
+      height: var(--tile-slot-size, clamp(45px, 12vw, 55px));
       border-radius: 20px;
       border: none;
       display: flex;
@@ -108,7 +108,7 @@
     #homeButton, #clearButton, #undoButton, #redoButton, #exportButton, #importButton {
       position: absolute;
       top: env(safe-area-inset-top, 10px);
-      font-size: clamp(16px, 4vw, 18px);
+      font-size: var(--button-font-size, clamp(16px, 4vw, 18px));
       padding: clamp(12px, 3vw, 16px);
       z-index: 999;
       background: #3498db;
@@ -117,8 +117,8 @@
       border: none;
       font-weight: bold;
       cursor: pointer;
-      min-width: clamp(50px, 12vw, 60px);
-      height: clamp(50px, 12vw, 60px);
+      min-width: var(--button-size, clamp(50px, 12vw, 60px));
+      height: var(--button-size, clamp(50px, 12vw, 60px));
       display: flex;
       align-items: center;
       justify-content: center;
@@ -284,10 +284,90 @@
     const canvas = document.getElementById("gameCanvas");
     const ctx = canvas.getContext("2d");
 
-    // キャンバスサイズの動的調整
+    // デバイス検出と最適化設定
+    function detectDevice() {
+      const userAgent = navigator.userAgent.toLowerCase();
+      const isMobile = /mobile|android|iphone|ipad|ipod|blackberry|windows phone/i.test(userAgent);
+      const isTablet = /ipad|android(?=.*\b(?!mobile)\w{2,})|tablet/i.test(userAgent);
+      const isTouch = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+      
+      // 画面サイズによる判定
+      const screenWidth = window.innerWidth;
+      const screenHeight = window.innerHeight;
+      
+      let deviceType = 'desktop';
+      if (isMobile && !isTablet) {
+        deviceType = 'mobile';
+      } else if (isTablet || (screenWidth >= 768 && screenHeight >= 1024)) {
+        deviceType = 'tablet';
+      }
+      
+      console.log('デバイス検出:', {
+        deviceType,
+        screenWidth,
+        screenHeight,
+        isTouch,
+        userAgent: userAgent.substring(0, 100)
+      });
+      
+      return {
+        type: deviceType,
+        isTouch,
+        screenWidth,
+        screenHeight
+      };
+    }
+
+    // デバイス別の最適化設定
+    function getDeviceOptimization() {
+      const device = detectDevice();
+      
+      const optimizations = {
+        mobile: {
+          canvasMaxWidth: 0.98, // 画面幅の98%
+          canvasMaxHeight: 0.6, // 画面高さの60%
+          tileSlotSize: 'clamp(35px, 8vw, 45px)',
+          buttonSize: 'clamp(40px, 8vw, 50px)',
+          buttonFontSize: 'clamp(14px, 3.5vw, 16px)',
+          slotBarPadding: 'clamp(8px, 2vw, 10px)',
+          slotBarGap: 'clamp(6px, 1.5vw, 8px)',
+          touchThrottle: 8, // 約120fps（8ms間隔）
+          cameraSpeed: 6
+        },
+        tablet: {
+          canvasMaxWidth: 0.95, // 画面幅の95%
+          canvasMaxHeight: 0.65, // 画面高さの65%
+          tileSlotSize: 'clamp(40px, 10vw, 50px)',
+          buttonSize: 'clamp(45px, 10vw, 55px)',
+          buttonFontSize: 'clamp(16px, 4vw, 18px)',
+          slotBarPadding: 'clamp(12px, 3vw, 15px)',
+          slotBarGap: 'clamp(10px, 2.5vw, 12px)',
+          touchThrottle: 12, // 約83fps（12ms間隔）
+          cameraSpeed: 7
+        },
+        desktop: {
+          canvasMaxWidth: 0.95, // 画面幅の95%
+          canvasMaxHeight: 0.7, // 画面高さの70%
+          tileSlotSize: 'clamp(45px, 12vw, 55px)',
+          buttonSize: 'clamp(50px, 12vw, 60px)',
+          buttonFontSize: 'clamp(16px, 4vw, 18px)',
+          slotBarPadding: 'clamp(15px, 4vw, 20px)',
+          slotBarGap: 'clamp(12px, 3vw, 15px)',
+          touchThrottle: 16, // 約60fps（16ms間隔）
+          cameraSpeed: 8
+        }
+      };
+      
+      return optimizations[device.type] || optimizations.desktop;
+    }
+
+    // キャンバスサイズの動的調整（デバイス別最適化）
     function resizeCanvas() {
-      const maxWidth = window.innerWidth * 0.95;
-      const maxHeight = window.innerHeight * 0.7;
+      const device = detectDevice();
+      const optimization = getDeviceOptimization();
+      
+      const maxWidth = window.innerWidth * optimization.canvasMaxWidth;
+      const maxHeight = window.innerHeight * optimization.canvasMaxHeight;
       const aspectRatio = 1024 / 640; // 元のキャンバスのアスペクト比
       
       let newWidth = maxWidth;
@@ -302,10 +382,34 @@
       canvas.style.width = newWidth + 'px';
       canvas.style.height = newHeight + 'px';
       
+      // デバイス別の最適化設定を適用
+      applyDeviceOptimization();
+      
       console.log('地形エディターキャンバスサイズ調整:', {
+        device: device.type,
         width: newWidth,
-        height: newHeight
+        height: newHeight,
+        optimization
       });
+    }
+
+    // デバイス別の最適化を適用
+    function applyDeviceOptimization() {
+      const device = detectDevice();
+      const optimization = getDeviceOptimization();
+      
+      // CSS変数として最適化設定を適用
+      document.documentElement.style.setProperty('--tile-slot-size', optimization.tileSlotSize);
+      document.documentElement.style.setProperty('--button-size', optimization.buttonSize);
+      document.documentElement.style.setProperty('--button-font-size', optimization.buttonFontSize);
+      document.documentElement.style.setProperty('--slot-bar-padding', optimization.slotBarPadding);
+      document.documentElement.style.setProperty('--slot-bar-gap', optimization.slotBarGap);
+      
+      // グローバル変数として設定
+      window.deviceOptimization = optimization;
+      window.currentDevice = device;
+      
+      console.log('地形エディター デバイス最適化適用:', optimization);
     }
 
     // 初期サイズ調整
@@ -601,11 +705,10 @@
     canvas.addEventListener("mousemove", placeTile);
     canvas.addEventListener("click", placeTile);
 
-    // タッチイベント対応
+    // タッチイベント対応（デバイス別最適化）
     let isTouchDown = false;
     let lastPlacedTile = { row: -1, col: -1 }; // 最後に配置したタイルの位置
     let lastTouchTime = 0; // 最後のタッチ処理時間
-    const touchThrottle = 16; // 約60fps（16ms間隔）
     
     canvas.addEventListener("touchstart", e => {
       e.preventDefault(); // デフォルトのスクロールを防ぐ
@@ -629,6 +732,8 @@
     canvas.addEventListener("touchmove", e => {
       e.preventDefault(); // デフォルトのスクロールを防ぐ
       const now = performance.now();
+      const touchThrottle = window.deviceOptimization?.touchThrottle || 16;
+      
       if (isTouchDown && e.touches.length > 0 && now - lastTouchTime > touchThrottle) {
         const touch = e.touches[0];
         placeTileTouch(touch);
@@ -749,7 +854,10 @@
     }
 
     function update() {
-      const camSpeed = 8;
+      const device = detectDevice();
+      const optimization = getDeviceOptimization();
+      const camSpeed = optimization.cameraSpeed || 8;
+      
       // キー設定を使用したカメラ移動
       const leftKey = window.editorKeys?.editorLeft || 'a';
       const rightKey = window.editorKeys?.editorRight || 'd';
