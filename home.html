@@ -40,12 +40,12 @@
     
     #container {
       max-width: 100%;
-      padding: 10px;
+      padding: var(--container-padding, 10px);
       margin: 0 auto;
     }
     
     h1 {
-      font-size: clamp(28px, 8vw, 42px);
+      font-size: var(--title-font-size, clamp(28px, 8vw, 42px));
       text-align: center;
       margin-bottom: 30px;
       color: white;
@@ -54,17 +54,17 @@
     }
     
     h3 {
-      font-size: clamp(18px, 5vw, 24px);
+      font-size: var(--subtitle-font-size, clamp(18px, 5vw, 24px));
       color: white;
       text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
       margin-bottom: 15px;
     }
     
     button {
-      font-size: clamp(16px, 4.5vw, 20px);
-      padding: clamp(15px, 4vw, 20px) clamp(25px, 6vw, 35px);
+      font-size: var(--button-font-size, clamp(16px, 4.5vw, 20px));
+      padding: var(--button-padding, clamp(15px, 4vw, 20px) clamp(25px, 6vw, 35px));
       margin: 12px;
-      min-height: 55px;
+      min-height: var(--button-min-height, 55px);
       border-radius: 20px;
       border: none;
       background: #3498db;
@@ -92,7 +92,7 @@
     }
     
     .char-label {
-      font-size: clamp(14px, 3.5vw, 18px);
+      font-size: var(--char-label-font-size, clamp(14px, 3.5vw, 18px));
       color: white;
       text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
       display: flex;
@@ -114,23 +114,23 @@
       margin-bottom: 25px;
       background: rgba(255, 255, 255, 0.1);
       border-radius: 15px;
-      padding: 20px;
+      padding: var(--char-select-padding, 20px);
       backdrop-filter: blur(10px);
       -webkit-backdrop-filter: blur(10px);
     }
     
     #characterSelect > div {
-      gap: 15px;
+      gap: var(--char-select-gap, 15px);
       justify-content: center;
       flex-wrap: wrap;
     }
     
     .menu-button {
       display: block;
-      width: clamp(280px, 80vw, 350px);
-      height: clamp(70px, 15vw, 85px);
+      width: var(--menu-button-width, clamp(280px, 80vw, 350px));
+      height: var(--menu-button-height, clamp(70px, 15vw, 85px));
       margin: 20px auto;
-      font-size: clamp(18px, 4.5vw, 22px);
+      font-size: var(--menu-button-font-size, clamp(18px, 4.5vw, 22px));
       font-weight: bold;
       color: white;
       background: #3498db;
@@ -140,7 +140,7 @@
       transition: all 0.3s ease;
       box-shadow: 0 8px 25px rgba(52, 152, 219, 0.3);
       text-decoration: none;
-      line-height: clamp(70px, 15vw, 85px);
+      line-height: var(--menu-button-height, clamp(70px, 15vw, 85px));
     }
     
     .menu-button:hover {
@@ -279,5 +279,133 @@
   </div>
   <script src="home.js"></script>
   <div id="message" style="position:fixed;top:env(safe-area-inset-top, 10px);left:50%;transform:translateX(-50%);background:#fff;padding:8px 16px;border-radius:8px;color:#1a2a4f;display:none;z-index:9999;font-weight:bold;box-shadow:0 4px 12px rgba(0,0,0,0.2);"></div>
+  <script>
+    // デバイス検出と最適化設定
+    function detectDevice() {
+      const userAgent = navigator.userAgent.toLowerCase();
+      const isMobile = /mobile|android|iphone|ipad|ipod|blackberry|windows phone/i.test(userAgent);
+      const isTablet = /ipad|android(?=.*\b(?!mobile)\w{2,})|tablet/i.test(userAgent);
+      const isTouch = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+      
+      // 画面サイズによる判定
+      const screenWidth = window.innerWidth;
+      const screenHeight = window.innerHeight;
+      
+      let deviceType = 'desktop';
+      if (isMobile && !isTablet) {
+        deviceType = 'mobile';
+      } else if (isTablet || (screenWidth >= 768 && screenHeight >= 1024)) {
+        deviceType = 'tablet';
+      }
+      
+      console.log('ホーム画面 デバイス検出:', {
+        deviceType,
+        screenWidth,
+        screenHeight,
+        isTouch,
+        userAgent: userAgent.substring(0, 100)
+      });
+      
+      return {
+        type: deviceType,
+        isTouch,
+        screenWidth,
+        screenHeight
+      };
+    }
+
+    // デバイス別の最適化設定
+    function getDeviceOptimization() {
+      const device = detectDevice();
+      
+      const optimizations = {
+        mobile: {
+          titleFontSize: 'clamp(24px, 7vw, 32px)',
+          subtitleFontSize: 'clamp(16px, 4.5vw, 20px)',
+          buttonFontSize: 'clamp(14px, 4vw, 16px)',
+          buttonPadding: 'clamp(12px, 3vw, 16px) clamp(20px, 5vw, 28px)',
+          buttonMinHeight: '50px',
+          menuButtonWidth: 'clamp(250px, 85vw, 320px)',
+          menuButtonHeight: 'clamp(60px, 12vw, 70px)',
+          menuButtonFontSize: 'clamp(16px, 4vw, 18px)',
+          charLabelFontSize: 'clamp(12px, 3vw, 14px)',
+          containerPadding: '5px',
+          charSelectPadding: '15px',
+          charSelectGap: '10px'
+        },
+        tablet: {
+          titleFontSize: 'clamp(28px, 7.5vw, 38px)',
+          subtitleFontSize: 'clamp(18px, 4.8vw, 22px)',
+          buttonFontSize: 'clamp(16px, 4.2vw, 18px)',
+          buttonPadding: 'clamp(14px, 3.5vw, 18px) clamp(22px, 5.5vw, 32px)',
+          buttonMinHeight: '55px',
+          menuButtonWidth: 'clamp(280px, 80vw, 350px)',
+          menuButtonHeight: 'clamp(70px, 14vw, 80px)',
+          menuButtonFontSize: 'clamp(18px, 4.5vw, 20px)',
+          charLabelFontSize: 'clamp(14px, 3.5vw, 16px)',
+          containerPadding: '8px',
+          charSelectPadding: '18px',
+          charSelectGap: '12px'
+        },
+        desktop: {
+          titleFontSize: 'clamp(32px, 8vw, 42px)',
+          subtitleFontSize: 'clamp(20px, 5vw, 24px)',
+          buttonFontSize: 'clamp(18px, 4.5vw, 20px)',
+          buttonPadding: 'clamp(15px, 4vw, 20px) clamp(25px, 6vw, 35px)',
+          buttonMinHeight: '60px',
+          menuButtonWidth: 'clamp(300px, 75vw, 380px)',
+          menuButtonHeight: 'clamp(75px, 15vw, 85px)',
+          menuButtonFontSize: 'clamp(20px, 4.5vw, 22px)',
+          charLabelFontSize: 'clamp(16px, 3.5vw, 18px)',
+          containerPadding: '10px',
+          charSelectPadding: '20px',
+          charSelectGap: '15px'
+        }
+      };
+      
+      return optimizations[device.type] || optimizations.desktop;
+    }
+
+    // デバイス別の最適化を適用
+    function applyDeviceOptimization() {
+      const device = detectDevice();
+      const optimization = getDeviceOptimization();
+      
+      // CSS変数として最適化設定を適用
+      document.documentElement.style.setProperty('--title-font-size', optimization.titleFontSize);
+      document.documentElement.style.setProperty('--subtitle-font-size', optimization.subtitleFontSize);
+      document.documentElement.style.setProperty('--button-font-size', optimization.buttonFontSize);
+      document.documentElement.style.setProperty('--button-padding', optimization.buttonPadding);
+      document.documentElement.style.setProperty('--button-min-height', optimization.buttonMinHeight);
+      document.documentElement.style.setProperty('--menu-button-width', optimization.menuButtonWidth);
+      document.documentElement.style.setProperty('--menu-button-height', optimization.menuButtonHeight);
+      document.documentElement.style.setProperty('--menu-button-font-size', optimization.menuButtonFontSize);
+      document.documentElement.style.setProperty('--char-label-font-size', optimization.charLabelFontSize);
+      document.documentElement.style.setProperty('--container-padding', optimization.containerPadding);
+      document.documentElement.style.setProperty('--char-select-padding', optimization.charSelectPadding);
+      document.documentElement.style.setProperty('--char-select-gap', optimization.charSelectGap);
+      
+      // グローバル変数として設定
+      window.deviceOptimization = optimization;
+      window.currentDevice = device;
+      
+      console.log('ホーム画面 デバイス最適化適用:', optimization);
+    }
+
+    // 初期化時に最適化を適用
+    document.addEventListener('DOMContentLoaded', function() {
+      applyDeviceOptimization();
+    });
+
+    // ウィンドウリサイズ時に最適化を再適用
+    window.addEventListener('resize', function() {
+      setTimeout(applyDeviceOptimization, 100);
+    });
+
+    // 向き変更時に最適化を再適用
+    window.addEventListener('orientationchange', function() {
+      setTimeout(applyDeviceOptimization, 200);
+    });
+  </script>
 </body>
 </html>

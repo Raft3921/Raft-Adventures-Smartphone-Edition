@@ -45,7 +45,7 @@
       background: rgba(255, 255, 255, 0.95);
       color: #0a1b2a;
       border-radius: 20px;
-      padding: clamp(20px, 5vw, 30px);
+      padding: var(--container-padding, clamp(20px, 5vw, 30px));
       max-width: 100%;
       width: 100%;
       max-width: 600px;
@@ -61,14 +61,14 @@
       text-align: center;
       margin-bottom: 25px;
       color: #1a2a4f;
-      font-size: clamp(24px, 6vw, 32px);
+      font-size: var(--title-font-size, clamp(24px, 6vw, 32px));
       font-weight: bold;
       text-shadow: 1px 1px 2px rgba(0,0,0,0.1);
     }
     
     .setting-section {
-      margin-bottom: 25px;
-      padding: clamp(15px, 4vw, 20px);
+      margin-bottom: var(--section-margin, 25px);
+      padding: var(--section-padding, clamp(15px, 4vw, 20px));
       background: rgba(248, 249, 250, 0.8);
       border-radius: 15px;
       backdrop-filter: blur(10px);
@@ -81,7 +81,7 @@
       color: #1a2a4f;
       border-bottom: 3px solid #4466ff;
       padding-bottom: 10px;
-      font-size: clamp(18px, 4.5vw, 22px);
+      font-size: var(--section-font-size, clamp(18px, 4.5vw, 22px));
       font-weight: bold;
     }
     
@@ -94,7 +94,7 @@
       margin-bottom: 8px;
       font-weight: bold;
       color: #1a2a4f;
-      font-size: clamp(15px, 4vw, 18px);
+      font-size: var(--label-font-size, clamp(15px, 4vw, 18px));
     }
     
     .setting-item input[type="range"] {
@@ -173,13 +173,13 @@
       background: #3498db;
       color: white;
       border: none;
-      padding: clamp(15px, 4vw, 18px) clamp(30px, 7vw, 40px);
-      font-size: clamp(16px, 4.5vw, 18px);
+      padding: var(--button-padding, clamp(15px, 4vw, 18px) clamp(30px, 7vw, 40px));
+      font-size: var(--button-font-size, clamp(16px, 4.5vw, 18px));
       border-radius: 20px;
       cursor: pointer;
       margin: 10px;
       font-weight: bold;
-      min-height: 55px;
+      min-height: var(--button-min-height, 55px);
       transition: all 0.3s ease;
       box-shadow: 0 6px 20px rgba(52, 152, 219, 0.3);
     }
@@ -642,6 +642,121 @@
       }
     `;
     document.head.appendChild(style);
+
+    // デバイス検出と最適化設定
+    function detectDevice() {
+      const userAgent = navigator.userAgent.toLowerCase();
+      const isMobile = /mobile|android|iphone|ipad|ipod|blackberry|windows phone/i.test(userAgent);
+      const isTablet = /ipad|android(?=.*\b(?!mobile)\w{2,})|tablet/i.test(userAgent);
+      const isTouch = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+      
+      // 画面サイズによる判定
+      const screenWidth = window.innerWidth;
+      const screenHeight = window.innerHeight;
+      
+      let deviceType = 'desktop';
+      if (isMobile && !isTablet) {
+        deviceType = 'mobile';
+      } else if (isTablet || (screenWidth >= 768 && screenHeight >= 1024)) {
+        deviceType = 'tablet';
+      }
+      
+      console.log('設定画面 デバイス検出:', {
+        deviceType,
+        screenWidth,
+        screenHeight,
+        isTouch,
+        userAgent: userAgent.substring(0, 100)
+      });
+      
+      return {
+        type: deviceType,
+        isTouch,
+        screenWidth,
+        screenHeight
+      };
+    }
+
+    // デバイス別の最適化設定
+    function getDeviceOptimization() {
+      const device = detectDevice();
+      
+      const optimizations = {
+        mobile: {
+          titleFontSize: 'clamp(20px, 6vw, 26px)',
+          sectionFontSize: 'clamp(16px, 4.5vw, 18px)',
+          labelFontSize: 'clamp(14px, 4vw, 16px)',
+          buttonFontSize: 'clamp(14px, 4vw, 16px)',
+          buttonPadding: 'clamp(12px, 3vw, 16px) clamp(24px, 6vw, 32px)',
+          buttonMinHeight: '50px',
+          containerPadding: 'clamp(15px, 4vw, 20px)',
+          sectionPadding: 'clamp(12px, 3vw, 15px)',
+          sectionMargin: '20px'
+        },
+        tablet: {
+          titleFontSize: 'clamp(24px, 6.5vw, 30px)',
+          sectionFontSize: 'clamp(18px, 4.8vw, 20px)',
+          labelFontSize: 'clamp(15px, 4.2vw, 17px)',
+          buttonFontSize: 'clamp(16px, 4.2vw, 18px)',
+          buttonPadding: 'clamp(14px, 3.5vw, 18px) clamp(28px, 6.5vw, 36px)',
+          buttonMinHeight: '55px',
+          containerPadding: 'clamp(18px, 4.5vw, 25px)',
+          sectionPadding: 'clamp(15px, 3.5vw, 18px)',
+          sectionMargin: '25px'
+        },
+        desktop: {
+          titleFontSize: 'clamp(28px, 7vw, 32px)',
+          sectionFontSize: 'clamp(20px, 5vw, 22px)',
+          labelFontSize: 'clamp(16px, 4.5vw, 18px)',
+          buttonFontSize: 'clamp(18px, 4.5vw, 18px)',
+          buttonPadding: 'clamp(15px, 4vw, 18px) clamp(30px, 7vw, 40px)',
+          buttonMinHeight: '60px',
+          containerPadding: 'clamp(20px, 5vw, 30px)',
+          sectionPadding: 'clamp(15px, 4vw, 20px)',
+          sectionMargin: '30px'
+        }
+      };
+      
+      return optimizations[device.type] || optimizations.desktop;
+    }
+
+    // デバイス別の最適化を適用
+    function applyDeviceOptimization() {
+      const device = detectDevice();
+      const optimization = getDeviceOptimization();
+      
+      // CSS変数として最適化設定を適用
+      document.documentElement.style.setProperty('--title-font-size', optimization.titleFontSize);
+      document.documentElement.style.setProperty('--section-font-size', optimization.sectionFontSize);
+      document.documentElement.style.setProperty('--label-font-size', optimization.labelFontSize);
+      document.documentElement.style.setProperty('--button-font-size', optimization.buttonFontSize);
+      document.documentElement.style.setProperty('--button-padding', optimization.buttonPadding);
+      document.documentElement.style.setProperty('--button-min-height', optimization.buttonMinHeight);
+      document.documentElement.style.setProperty('--container-padding', optimization.containerPadding);
+      document.documentElement.style.setProperty('--section-padding', optimization.sectionPadding);
+      document.documentElement.style.setProperty('--section-margin', optimization.sectionMargin);
+      
+      // グローバル変数として設定
+      window.deviceOptimization = optimization;
+      window.currentDevice = device;
+      
+      console.log('設定画面 デバイス最適化適用:', optimization);
+    }
+
+    // 初期化時に最適化を適用
+    document.addEventListener('DOMContentLoaded', function() {
+      applyDeviceOptimization();
+    });
+
+    // ウィンドウリサイズ時に最適化を再適用
+    window.addEventListener('resize', function() {
+      setTimeout(applyDeviceOptimization, 100);
+    });
+
+    // 向き変更時に最適化を再適用
+    window.addEventListener('orientationchange', function() {
+      setTimeout(applyDeviceOptimization, 200);
+    });
   </script>
 </body>
 </html> 
